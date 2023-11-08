@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric, OverloadedLabels, OverloadedStrings #-}
 module Database where
 import Data.Text (Text)
-import Database.Selda (Generic, SqlRow, ID, table, autoPrimary, Table, Attr ((:-)), select, query, MonadSelda, ForeignKey (foreignKey), SeldaM, insert, def, insert_, restrict, insertWithPK, (!), (.==), literal, limit, (&&=), Set (isIn), deleteFrom, upsert, update, with, Assignment ((:=)), createTable, MonadIO (liftIO), MonadMask, (.&&))
+import Database.Selda (Generic, SqlRow, ID, table, autoPrimary, Table, Attr ((:-)), select, query, MonadSelda, ForeignKey (foreignKey), SeldaM, insert, def, insert_, restrict, insertWithPK, (!), (.==), literal, limit, (&&=), Set (isIn), deleteFrom, upsert, update, with, Assignment ((:=)), createTable, MonadIO (liftIO), MonadMask, (.&&), from)
 import Database.Selda.PostgreSQL (PG, PGConnectInfo (PGConnectInfo, pgHost, pgPort, pgDatabase, pgUsername, pgPassword, pgSchema))
 import Text.Printf (printf)
 import Control.Concurrent (threadDelay)
@@ -77,6 +77,10 @@ insertMachine ::  Text -> SeldaM PG (ID VendingMachine)
 insertMachine machineName = insertWithPK vendingMachines [VendingMachine def machineName]
 
 
+getItems :: SeldaM PG [Item]
+getItems = query $ do
+    select items
+
 findItemsByNames :: MonadSelda m => [Text] -> m [Item]
 findItemsByNames names = query $ do
     its <- select items
@@ -99,6 +103,14 @@ findMachineItemsByMachine machineId = query $ do
     restrict(its ! #machine .== literal machineId)
     return its
 
+findMachineItemsByMachineName :: MonadSelda m => Text -> m [VendingMachineItem]
+findMachineItemsByMachineName machineName = query $ do
+    its <- select vendingMachineItems
+    machines <- select vendingMachines
+    restrict(machines ! #machineName .== literal machineName)
+    restrict(its ! #machine .== machines ! #mid)
+    return its
+
 
 deleteMachineItems :: MonadSelda m => [ID VendingMachineItem] -> m Int
 deleteMachineItems machineIds = do
@@ -110,4 +122,4 @@ insertMachineItem machineItem = do
         (\row -> (row ! #machine .== literal (machine machineItem)) .&& (row ! #item .== literal (item machineItem)))
         (\row -> row `with` [#item := literal (item machineItem), #machine := literal (Database.machine machineItem), #amount := literal (amount machineItem)])
         [machineItem]
-    
+
