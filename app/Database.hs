@@ -51,9 +51,9 @@ connectionConfiguration = PGConnectInfo
 
 createAllTables :: MonadSelda m => m ()
 createAllTables = do
-    _ <- createTable items
-    _ <- createTable vendingMachines
-    _ <- createTable vendingMachineItems
+    tryCreateTable items
+    tryCreateTable vendingMachines
+    tryCreateTable vendingMachineItems
     return ()
 
 

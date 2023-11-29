@@ -5,7 +5,7 @@ import Database (findMachineByName, insertMachine, getMachineById, findItemsByNa
 import Database.Selda (SeldaM, MonadSelda, def, MonadIO (liftIO))
 import Database.Selda.PostgreSQL (PG)
 import Data.Maybe (listToMaybe)
-import Data.List (find)
+import Data.List (find, nub)
 import GHC.TypeLits (ErrorMessage(Text))
 import Text.Printf (printf)
 
@@ -21,7 +21,7 @@ save machineName machineData = do
           Just vm -> return vm
 
     let items = planogram (VendingMachineApi.machine machineData)
-    let itemNames = map name items
+    let itemNames = nub $ map name items
     alreadyExistingItems <- findItemsByNames itemNames
     liftIO $ printf "Already Exists %d items\n" (length alreadyExistingItems)
     let alreadyExistingItemNames = map itemName alreadyExistingItems

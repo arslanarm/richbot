@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 import Telegram.Bot.Simple.BotApp (BotApp(BotApp, botInitialModel, botAction, botHandler), startBot_)
-import Telegram.Bot.API (Update (updateInlineQuery, updateMessage), InlineQueryId, defAnswerInlineQuery, Token (Token), defaultTelegramClientEnv, InlineQuery (inlineQueryId, inlineQueryQuery), Message (messageText))
+import Telegram.Bot.API
 import qualified Data.Text as Text
 import Data.Text (Text, splitOn, unpack, pack)
 import Telegram.Bot.API.InlineMode.InlineQueryResult (InlineQueryResultGeneric(inlineQueryResultTitle, inlineQueryResultInputMessageContent), defInlineQueryResultGeneric, InlineQueryResultId (InlineQueryResultId), defInlineQueryResultGenericThumbnail, defInlineQueryResultArticle)
@@ -37,6 +37,7 @@ main = do
   forkIO $ forever $ do
     token <- getToken (ByteString.pack username) (ByteString.pack password) (ByteString.pack devid) address
     withPostgreSQL connectionConfiguration $ do
+      createAllTables
       vendingMachines <- getAllMachines
       forM_ vendingMachines $ \vendingMachine -> do
         liftIO $ printf "Checking %s\n" (machineName vendingMachine)
