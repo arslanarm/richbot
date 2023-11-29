@@ -34,6 +34,7 @@ main = do
   password <- getEnv "PASSWORD"
   devid <- getEnv "DEVID"
   address <- getEnv "ADDRESS"
+  telegramToken <- getEnv "TELEGRAM_TOKEN"
   forkIO $ forever $ do
     token <- getToken (ByteString.pack username) (ByteString.pack password) (ByteString.pack devid) address
     withPostgreSQL connectionConfiguration $ do
@@ -47,8 +48,8 @@ main = do
     threadDelay 60000000  -- Delay for one minute
 
   putStrLn "Please enter the token"
-  token <- Token . Text.pack <$> getLine
-  run token
+  
+  run ((Token . Text.pack) telegramToken)
 
 data Model = Model (SeldaConnection PG)
 
