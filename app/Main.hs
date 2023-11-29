@@ -12,7 +12,7 @@ import Data.Maybe (isJust)
 import Telegram.Bot.Simple.UpdateParser (updateMessageText)
 import Database.Selda ( Text, MonadIO (liftIO) )
 import Database.Selda.PostgreSQL ( withPostgreSQL, seldaClose, pgOpen, PG )
-import Database (getAllMachines, VendingMachine (machineName, mid), connectionConfiguration, createAllTables, insertMachine, getItems, Item (iid, itemName), VendingMachineItem (item, miid, amount), findMachineItemsByMachine, findMachineItemsByMachineName)
+import Database (getAllMachines, VendingMachine (machineName, mid), connectionConfiguration, createAllTables, insertMachine, getItems, Item (iid, itemName), VendingMachineItem (item, miid, amount), findMachineItemsByMachine, findMachineItemsByMachineName, findMachinesByItemName)
 import VendingMachineApi (getToken, getItems, authorizeToken, VendingMachineItem (name), VendingMachineData (machine), VendingMachineInfo (planogram))
 import qualified Control.Monad
 import Control.Concurrent ( threadDelay, forkIO )
@@ -56,6 +56,7 @@ data Action
   | GetMachines
   | GetItems
   | GetMachineItems Text
+  | SearchItem Text
 
 bot :: Model -> BotApp Model Action
 bot connection = BotApp
@@ -76,6 +77,7 @@ updateToAction update _ = case updateMessage update of
         "/get_machines" -> Just GetMachines
         "/get_items" -> Just GetItems
         "/get_machine_items" -> Just $ GetMachineItems (head args)
+        "/search_item" -> Just $ SearchItem (head args)
         _ -> Nothing
     _ -> Nothing
 
@@ -98,6 +100,11 @@ handleAction action model@(Model connection) = case action of
     result <- liftIO $ runSeldaT (Database.findMachineItemsByMachineName machineName) connection
 
     replyText (foldr (\r acc -> acc <> machineItemToString r <> "\n" ) "" result)
+  SearchItem itemName -> model <# do
+    result <- liftIO $ runSeldaT (Database.findMachinesByItemName itemName) connection
+
+    replyText (foldr (\r acc -> acc <> machineToString r <> "\n") "" result)
+    
 
 machineToString :: VendingMachine -> Text
 machineToString machine = "ID: " <> pack (show $ mid machine) <> " Name: " <> machineName machine

@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric, OverloadedLabels, OverloadedStrings #-}
 module Database where
 import Data.Text (Text)
-import Database.Selda (Generic, SqlRow, ID, table, autoPrimary, Table, Attr ((:-)), select, query, MonadSelda, ForeignKey (foreignKey), SeldaM, insert, def, insert_, restrict, insertWithPK, (!), (.==), literal, limit, (&&=), Set (isIn), deleteFrom, upsert, update, with, Assignment ((:=)), createTable, MonadIO (liftIO), MonadMask, (.&&), from)
+import Database.Selda
 import Database.Selda.PostgreSQL (PG, PGConnectInfo (PGConnectInfo, pgHost, pgPort, pgDatabase, pgUsername, pgPassword, pgSchema))
 import Text.Printf (printf)
 import Control.Concurrent (threadDelay)
@@ -123,3 +123,12 @@ insertMachineItem machineItem = do
         (\row -> row `with` [#item := literal (item machineItem), #machine := literal (Database.machine machineItem), #amount := literal (amount machineItem)])
         [machineItem]
 
+findMachinesByItemName :: (MonadSelda m) => Text -> m [VendingMachine]
+findMachinesByItemName itemName = query $ do
+    its <- select items
+    restrict((its ! #itemName) `like` literal itemName)
+    vits <- select vendingMachineItems
+    machines <- select vendingMachines
+    restrict(vits ! #item .== its ! #iid)
+    restrict(machines ! #mid .== vits ! #machine)
+    return machines
